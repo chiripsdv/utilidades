@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Llená tus datos y descargá un CV elegante en PDF tamaño carta.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231C2B33%22/%3E%3Crect x=%226%22 y=%226%22 width=%229%22 height=%2220%22 fill=%22%23C8A15A%22/%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Generador de CV Elegante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: barra superior + formulario en columna izquierda (scroll) + hoja carta en vivo a la derecha; en teléfono se apilan. */
+:root{
+  --bg:#EEF1F2; --panel:#FFFFFF; --fg:#1B262C; --muted:#5C6B72; --line:#D7DEE1;
+  --field:#F7F9FA; --ink:#1C2B33; --gold:#B08A43; --danger:#B3402E; --focus:#2F6F8F;
+  --display:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --ui:'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121A1E; --panel:#1A242A; --fg:#E6ECEE; --muted:#9AA9B0; --line:#2C3A41;
+  --field:#141D22; --ink:#E6ECEE; --gold:#D3AE68; --danger:#E7765F; --focus:#7FB8D4; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#121A1E; --panel:#1A242A; --fg:#E6ECEE; --muted:#9AA9B0; --line:#2C3A41;
+  --field:#141D22; --ink:#E6ECEE; --gold:#D3AE68; --danger:#E7765F; --focus:#7FB8D4; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--fg); font-family:var(--ui); font-size:14px}
+.top{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between;
+  padding-block:16px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  border-bottom:1px solid var(--line); background:var(--panel)}
+.brand{display:flex; flex-direction:column; gap:2px}
+.brand h1{margin:0; font-family:var(--display); font-weight:600; font-size:28px; line-height:1; color:var(--ink)}
+.brand p{margin:0; font-size:12.5px; color:var(--muted)}
+.actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.status{font-size:12.5px; color:var(--muted); min-height:1em}
+.status.err{color:var(--danger)}
+.btn{font:inherit; font-weight:600; font-size:13px; border-radius:8px; padding:10px 16px; min-height:44px; cursor:pointer;
+  border:1px solid var(--line); background:var(--panel); color:var(--fg); display:inline-flex; align-items:center; gap:8px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink); color:var(--panel); border-color:var(--ink)}
+.btn.primary:hover{opacity:.92}
+.btn:disabled{opacity:.6; cursor:progress}
+.btn.small{min-height:36px; padding:6px 12px; font-size:12.5px}
+.btn.ghost{border-color:transparent; background:transparent; color:var(--muted)}
+.btn.ghost:hover{color:var(--danger)}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+
+.wrap{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;
+  padding-block:24px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.form{flex:1 1 380px; max-width:520px; min-width:0; display:flex; flex-direction:column; gap:12px}
+.preview{flex:999 1 480px; min-width:0; position:sticky; top:env(safe-area-inset-top, 0px); display:flex; flex-direction:column; gap:10px}
+@media (max-width:900px){.preview{position:static}.form{max-width:none}}
+
+.note{font-size:12.5px; color:var(--muted); background:var(--panel); border:1px dashed var(--line); border-radius:10px; padding:10px 14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between}
+details.sec{background:var(--panel); border:1px solid var(--line); border-radius:12px}
+details.sec>summary{list-style:none; cursor:pointer; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; gap:10px;
+  font-family:var(--display); font-weight:600; font-size:20px; color:var(--ink)}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:""; width:8px; height:8px; border-right:2px solid var(--muted); border-bottom:2px solid var(--muted); transform:rotate(45deg); transition:transform .2s}
+details.sec[open]>summary::after{transform:rotate(-135deg)}
+.sec-body{padding:0 18px 18px; display:flex; flex-direction:column; gap:12px}
+.grid2{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px}
+@media (max-width:460px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.f{display:flex; flex-direction:column; gap:5px; min-width:0}
+.f.full{grid-column:1/-1}
+.f label{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.f input[type=text], .f input[type=email], .f textarea{font:inherit; font-size:14px; color:var(--fg); background:var(--field); border:1px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; min-height:42px}
+.f textarea{resize:vertical; min-height:84px; line-height:1.5}
+.f input:focus, .f textarea:focus{border-color:var(--focus); outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 20%, transparent)}
+.f .hint{font-size:11.5px; color:var(--muted)}
+.range-row{display:flex; gap:10px; align-items:center}
+.range-row input{flex:1; accent-color:var(--gold)}
+.range-row output{font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted); width:38px; text-align:right}
+.item{border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px; background:var(--field)}
+.item .f input, .item .f textarea{background:var(--panel)}
+.item-bar{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.item-bar span{font-size:12px; font-weight:700; color:var(--muted)}
+.item-bar div{display:flex; gap:2px}
+.iconbtn{font:inherit; background:transparent; border:1px solid transparent; color:var(--muted); width:36px; height:36px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center}
+.iconbtn:hover{border-color:var(--line); color:var(--fg)}
+.iconbtn.del:hover{color:var(--danger)}
+.photo-row{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+.photo-thumb{width:64px; height:64px; border-radius:50%; background:var(--field); border:1px solid var(--line); object-fit:cover; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--muted); overflow:hidden}
+.swatches{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.sw{width:40px; height:40px; border-radius:50%; border:3px solid var(--panel); box-shadow:0 0 0 1px var(--line); cursor:pointer}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.confirm{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+
+.pv-head{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+.pv-head span{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.chip{font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); background:var(--panel)}
+.chip.warn{color:var(--danger); border-color:var(--danger)}
+.stage{width:100%; overflow:hidden; position:relative}
+.sheet-holder{transform-origin:top left; width:816px; position:absolute; top:0; left:0}
+.sheet-holder .cv{box-shadow:0 10px 30px rgba(10,20,25,.18), 0 1px 3px rgba(10,20,25,.12)}
+.pagebreak{position:absolute; left:0; right:0; height:0; border-top:2px dashed #C0503C; pointer-events:none}
+.pagebreak::after{content:"Corte de página"; position:absolute; right:8px; top:4px; font:600 11px var(--ui); color:#C0503C; background:#fff; padding:2px 6px; border-radius:4px}
+
+/* ===== La hoja del CV: colores fijos de papel en ambos temas ===== */
+.cv{width:816px; min-height:1056px; display:grid; grid-template-columns:272px minmax(0,1fr); background:#FFFFFF; color:#1F2328; font-family:'Manrope', 'Segoe UI', sans-serif}
+.cv *{box-sizing:border-box}
+.cv-side{background:#1C2B33; color:#D5DDE1; padding:48px 32px; display:flex; flex-direction:column; gap:30px}
+.cv-photo{width:148px; height:148px; border-radius:50%; border:3px solid var(--acc); padding:5px; align-self:center}
+.cv-photo img, .cv-photo .ph{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block}
+.cv-photo .ph{background:#2C3E48; display:flex; align-items:center; justify-content:center; color:#E8EEF0; font-family:'Cormorant Garamond', Georgia, serif; font-size:46px; font-weight:600}
+.cv-h3{margin:0; font-size:11px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--acc)}
+.cv-sb{display:flex; flex-direction:column; gap:12px}
+.cv-contact{display:flex; gap:10px; align-items:flex-start; font-size:12px; line-height:1.4; word-break:break-word}
+.cv-contact svg{flex:none; margin-top:1px}
+.cv-skill{display:flex; flex-direction:column; gap:6px}
+.cv-skill .n{font-size:12px; color:#EEF2F4}
+.cv-bar{height:3px; background:#33474F; border-radius:2px}
+.cv-bar i{display:block; height:3px; border-radius:2px; background:var(--acc)}
+.cv-lang{font-size:12px; line-height:1.5}
+.cv-lang b{color:#EEF2F4; font-weight:600}
+.cv-pills{display:flex; flex-wrap:wrap; gap:6px}
+.cv-pills span{font-size:11px; padding:5px 10px; border:1px solid #4A5F68; border-radius:999px}
+.cv-main{padding:44px 48px 36px 44px; display:flex; flex-direction:column; gap:20px; min-width:0}
+.cv-name{margin:0; font-family:'Cormorant Garamond', Georgia, serif; font-weight:600; font-size:52px; line-height:.95; letter-spacing:-.01em; color:#1C2B33; overflow-wrap:anywhere}
+.cv-role{display:flex; align-items:center; gap:12px; margin-top:12px}
+.cv-role i{width:36px; height:2px; background:var(--acc); flex:none}
+.cv-role span{font-size:12px; font-weight:600; letter-spacing:.26em; text-transform:uppercase; color:#5A6870}
+.cv-h2{margin:0; font-family:'Cormorant Garamond', Georgia, serif; font-weight:600; font-size:22px; color:#1C2B33}
+.cv-sec{display:flex; flex-direction:column; gap:10px}
+.cv-p{margin:0; font-size:12.5px; line-height:1.65; color:#3B454C; white-space:pre-line}
+.cv-tl{display:flex; flex-direction:column; gap:18px; border-left:1px solid #DCE2E5; padding-left:20px; margin-left:4px}
+.cv-job{display:flex; flex-direction:column; gap:5px; position:relative}
+.cv-dot{position:absolute; left:-25px; top:4px; width:9px; height:9px; border-radius:50%; background:var(--acc)}
+.cv-dot.o{background:#FFFFFF; border:2px solid var(--acc)}
+.cv-jh{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+.cv-jh b{font-size:14px; color:#1C2B33}
+.cv-date{font-size:11px; font-weight:600; color:#6B5427; white-space:nowrap}
+.cv-co{font-size:12px; font-weight:500; color:#5A6870}
+.cv-ul{margin:2px 0 0; padding-left:16px; font-size:12px; line-height:1.6; color:#3B454C}
+.cv-edu{display:flex; flex-direction:column; gap:8px}
+.cv-edrow{display:flex; gap:14px; align-items:baseline; border-bottom:1px solid #E6EAEC; padding-bottom:8px; min-width:0}
+.cv-edrow .cv-date{min-width:78px}
+.cv-edrow div{display:flex; flex-wrap:wrap; column-gap:10px; row-gap:2px; align-items:baseline; min-width:0}
+.cv-edrow b{font-size:13px; color:#1C2B33}
+.cv-edrow .s{font-size:11.5px; color:#5A6870}
+.cv-courses{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px; row-gap:10px}
+.cv-course{display:flex; gap:10px; align-items:baseline; border-bottom:1px solid #E6EAEC; padding-bottom:7px; min-width:0}
+.cv-course .y{font-size:10.5px; font-weight:700; color:#6B5427; min-width:30px}
+.cv-course div{display:flex; flex-direction:column; gap:1px; min-width:0}
+.cv-course b{font-size:12px; color:#1C2B33}
+.cv-course span{font-size:11px; color:#5A6870}
+.cv-empty{color:#9AA7AD; font-style:italic}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="brand">
+    <h1>Generador de CV</h1>
+    <p>Llená el formulario y tu CV se arma solo. Cuando esté listo, descargalo en PDF.</p>
+  </div>
+  <div class="actions">
+    <span class="status" id="status" role="status" aria-live="polite"></span>
+    <button class="btn primary" id="btnPdf" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      Descargar PDF
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+  <form class="form" id="form" autocomplete="on">
+    <div class="note" id="exampleNote">
+      <span>Estos son datos de ejemplo. Reemplazalos con los tuyos; se guardan solos en este navegador.</span>
+      <span class="confirm" id="clearArea"><button class="btn small" type="button" id="btnClear">Empezar en blanco</button></span>
+    </div>
+
+    <details class="sec" open>
+      <summary>Datos personales</summary>
+      <div class="sec-body">
+        <div class="photo-row">
+          <div class="photo-thumb" id="photoThumb">Sin foto</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <label class="btn small" for="photoInput" style="cursor:pointer">Subir foto</label>
+            <input type="file" id="photoInput" accept="image/*" hidden>
+            <button class="btn small ghost" type="button" id="btnNoPhoto">Quitar foto</button>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="f full"><label for="name">Nombre completo</label><input type="text" id="name" data-k="name"></div>
+          <div class="f full"><label for="title">Título profesional</label><input type="text" id="title" data-k="title" placeholder="Ej.: Contadora Pública"></div>
+          <div class="f"><label for="phone">Teléfono</label><input type="text" id="phone" data-k="phone" inputmode="tel"></div>
+          <div class="f"><label for="email">Correo</label><input type="email" id="email" data-k="email"></div>
+          <div class="f"><label for="city">Ciudad</label><input type="text" id="city" data-k="city"></div>
+          <div class="f"><label for="web">LinkedIn o portafolio</label><input type="text" id="web" data-k="web"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>Perfil</summary>
+      <div class="sec-body">
+        <div class="f"><label for="profile">Resumen profesional</label>
+          <textarea id="profile" data-k="profile" rows="4"></textarea>
+          <span class="hint">3 o 4 líneas: quién sos, en qué sos fuerte y qué buscás.</span></div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>Experiencia</summary>
+      <div class="sec-body"><div id="list-experience" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="experience">+ Agregar empleo</button></div>
+    </details>
+
+    <details class="sec">
+      <summary>Educación</summary>
+      <div class="sec-body"><div id="list-education" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="education">+ Agregar estudio</button></div>
+    </details>
+
+    <details class="sec">
+      <summary>Cursos y certificaciones</summary>
+      <div class="sec-body"><div id="list-courses" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="courses">+ Agregar curso</button></div>
+    </details>
+
+    <details class="sec">
+      <summary>Habilidades</summary>
+      <div class="sec-body"><div id="list-skills" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="skills">+ Agregar habilidad</button></div>
+    </details>
+
+    <details class="sec">
+      <summary>Idiomas</summary>
+      <div class="sec-body"><div id="list-languages" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="languages">+ Agregar idioma</button></div>
+    </details>
+
+    <details class="sec">
+      <summary>Cualidades y estilo</summary>
+      <div class="sec-body">
+        <div class="f"><label for="qualities">Cualidades</label>
+          <input type="text" id="qualities" data-k="qualities">
+          <span class="hint">Separalas con comas.</span></div>
+        <div class="f"><span style="font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)">Color de acento</span>
+          <div class="swatches" id="swatches"></div></div>
+      </div>
+    </details>
+  </form>
+
+  <section class="preview" aria-label="Vista previa del CV">
+    <div class="pv-head"><span>Vista previa · tamaño carta</span><span class="chip" id="pageChip">1 página</span></div>
+    <div class="stage" id="stage"><div class="sheet-holder" id="holder"><div class="cv" id="cv"></div></div></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+const KEY = 'cv-generador-v1';
+const ACCENTS = [['#C8A15A','Dorado'],['#7FB3A6','Menta'],['#D98C6C','Terracota'],['#A9B8E8','Lavanda']];
+const PAGE_H = 1056;
+
+const SAMPLE = {
+  name:'Ana Sofía López', title:'Administradora de Empresas', phone:'+505 8888 0000', email:'ana.lopez@email.com',
+  city:'Managua, Nicaragua', web:'linkedin.com/in/analopez', photo:'', accent:'#C8A15A',
+  profile:'Administradora con 6 años de experiencia en finanzas y operaciones. Me destaco por ordenar procesos y por mejorar resultados con datos. Busco aportar en una empresa que valore la eficiencia y el trabajo en equipo.',
+  experience:[
+    {role:'Coordinadora de Operaciones', company:'Empresa Ejemplo S.A.', place:'Managua', start:'2022', end:'Presente', bullets:'Reduje los tiempos de entrega un 18 % en un año.\nCoordiné un equipo de 6 personas en tres áreas.\nImplementé un control de inventario en Excel y Power BI.'},
+    {role:'Analista Financiera', company:'Compañía Demo', place:'Managua', start:'2019', end:'2022', bullets:'Preparé reportes financieros mensuales para gerencia.\nDetecté ahorros de C$ 350,000 en gastos operativos.'}
+  ],
+  education:[
+    {degree:'Lic. en Administración de Empresas', school:'Universidad Ejemplo', years:'2014 — 2018'},
+    {degree:'Diplomado en Finanzas', school:'Instituto Demo', years:'2020'}
+  ],
+  courses:[
+    {year:'2025', name:'Power BI para negocios', org:'Plataforma en línea · 30 h'},
+    {year:'2024', name:'Gestión de proyectos', org:'Instituto Demo'},
+    {year:'2023', name:'Excel avanzado', org:'Centro de capacitación'},
+    {year:'2022', name:'Servicio al cliente', org:'INATEC'}
+  ],
+  skills:[{name:'Excel y Power BI', level:90},{name:'Contabilidad', level:80},{name:'Gestión de proyectos', level:75},{name:'Análisis financiero', level:85}],
+  languages:[{name:'Español', level:'Nativo'},{name:'Inglés', level:'Intermedio (B1)'}],
+  qualities:'Liderazgo, Organización, Comunicación, Trabajo en equipo'
+};
+const BLANK = {name:'', title:'', phone:'', email:'', city:'', web:'', photo:'', accent:'#C8A15A', profile:'',
+  experience:[{role:'', company:'', place:'', start:'', end:'', bullets:''}], education:[{degree:'', school:'', years:''}],
+  courses:[], skills:[], languages:[{name:'Español', level:'Nativo'}], qualities:''};
+
+const LISTS = {
+  experience:{label:'Empleo', blank:{role:'', company:'', place:'', start:'', end:'', bullets:''}, fields:[
+    {k:'role', label:'Cargo', full:true}, {k:'company', label:'Empresa'}, {k:'place', label:'Ciudad'},
+    {k:'start', label:'Desde', ph:'2022'}, {k:'end', label:'Hasta', ph:'Presente'},
+    {k:'bullets', label:'Logros y funciones', type:'textarea', full:true, hint:'Uno por línea. Empezá con un verbo y poné números si podés.'}]},
+  education:{label:'Estudio', blank:{degree:'', school:'', years:''}, fields:[
+    {k:'degree', label:'Título', full:true}, {k:'school', label:'Institución'}, {k:'years', label:'Años', ph:'2014 — 2018'}]},
+  courses:{label:'Curso', blank:{year:'', name:'', org:''}, fields:[
+    {k:'name', label:'Nombre del curso', full:true}, {k:'org', label:'Institución u horas'}, {k:'year', label:'Año'}]},
+  skills:{label:'Habilidad', blank:{name:'', level:75}, fields:[
+    {k:'name', label:'Habilidad', full:true}, {k:'level', label:'Nivel', type:'range', full:true}]},
+  languages:{label:'Idioma', blank:{name:'', level:''}, fields:[
+    {k:'name', label:'Idioma'}, {k:'level', label:'Nivel', ph:'Avanzado (B2)'}]}
+};
+
+let S = load() || clone(SAMPLE);
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function load(){ try{ const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; }catch(e){ return null; } }
+let saveT;
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){
+  try{ const c = clone(S); c.photo=''; localStorage.setItem(KEY, JSON.stringify(c)); }catch(e2){} } }, 300); }
+
+const $ = (id)=>document.getElementById(id);
+const esc = (v)=>String(v ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- campos simples ---------- */
+document.querySelectorAll('[data-k]').forEach(el=>{
+  el.value = S[el.dataset.k] || '';
+  el.addEventListener('input', ()=>{ S[el.dataset.k] = el.value; changed(); });
+});
+function syncSimple(){ document.querySelectorAll('[data-k]').forEach(el=>{ el.value = S[el.dataset.k] || ''; }); }
+
+/* ---------- listas ---------- */
+function icon(path){ return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'+path+'</svg>'; }
+function renderList(key){
+  const cfg = LISTS[key], box = $('list-'+key); box.innerHTML='';
+  S[key].forEach((item, i)=>{
+    const card = document.createElement('div'); card.className='item';
+    const bar = document.createElement('div'); bar.className='item-bar';
+    bar.innerHTML = '<span>'+cfg.label+' '+(i+1)+'</span><div>'+
+      '<button type="button" class="iconbtn" data-act="up" aria-label="Subir">'+icon('<path d="m18 15-6-6-6 6"/>')+'</button>'+
+      '<button type="button" class="iconbtn" data-act="down" aria-label="Bajar">'+icon('<path d="m6 9 6 6 6-6"/>')+'</button>'+
+      '<button type="button" class="iconbtn del" data-act="del" aria-label="Eliminar">'+icon('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>')+'</button></div>';
+    bar.addEventListener('click', e=>{
+      const b = e.target.closest('button'); if(!b) return;
+      const a = b.dataset.act, arr = S[key];
+      if(a==='del') arr.splice(i,1);
+      if(a==='up' && i>0) [arr[i-1],arr[i]]=[arr[i],arr[i-1]];
+      if(a==='down' && i<arr.length-1) [arr[i+1],arr[i]]=[arr[i],arr[i+1]];
+      renderList(key); changed();
+    });
+    card.appendChild(bar);
+    const g = document.createElement('div'); g.className='grid2';
+    cfg.fields.forEach(fd=>{
+      const id = key+'-'+i+'-'+fd.k;
+      const f = document.createElement('div'); f.className='f'+(fd.full?' full':'');
+      const lab = document.createElement('label'); lab.htmlFor=id; lab.textContent=fd.label; f.appendChild(lab);
+      let inp;
+      if(fd.type==='textarea'){ inp=document.createElement('textarea'); inp.rows=4; }
+      else if(fd.type==='range'){
+        const row=document.createElement('div'); row.className='range-row';
+        inp=document.createElement('input'); inp.type='range'; inp.min=10; inp.max=100; inp.step=5;
+        const out=document.createElement('output'); out.htmlFor=id; out.textContent=(item[fd.k]??75)+' %';
+        inp.addEventListener('input', ()=>{ out.textContent=inp.value+' %'; });
+        row.appendChild(inp); row.appendChild(out); f.appendChild(row);
+      } else { inp=document.createElement('input'); inp.type='text'; }
+      inp.id=id; inp.value = item[fd.k] ?? (fd.type==='range'?75:''); if(fd.ph) inp.placeholder=fd.ph;
+      inp.addEventListener('input', ()=>{ item[fd.k] = fd.type==='range' ? Number(inp.value) : inp.value; changed(); });
+      if(fd.type!=='range') f.appendChild(inp);
+      if(fd.hint){ const h=document.createElement('span'); h.className='hint'; h.textContent=fd.hint; f.appendChild(h); }
+      g.appendChild(f);
+    });
+    card.appendChild(g); box.appendChild(card);
+  });
+}
+document.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click', ()=>{
+  const k=b.dataset.add; S[k].push(clone(LISTS[k].blank)); renderList(k); changed();
+  const last = $('list-'+k).lastElementChild; const inp = last && last.querySelector('input,textarea'); if(inp) inp.focus();
+}));
+function renderAllLists(){ Object.keys(LISTS).forEach(renderList); }
+
+/* ---------- foto ---------- */
+$('photoInput').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{ const img = new Image(); img.onload = ()=>{
+    const s = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width=c.height=420;
+    c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 420, 420);
+    S.photo = c.toDataURL('image/jpeg', .9); photoThumb(); changed(); };
+    img.src = r.result; };
+  r.readAsDataURL(file); e.target.value='';
+});
+$('btnNoPhoto').addEventListener('click', ()=>{ S.photo=''; photoThumb(); changed(); });
+function photoThumb(){ const t=$('photoThumb'); t.innerHTML = S.photo ? '<img src="'+S.photo+'" alt="" style="width:100%;height:100%;object-fit:cover">' : 'Sin foto'; }
+
+/* ---------- color ---------- */
+function renderSwatches(){
+  const box=$('swatches'); box.innerHTML='';
+  ACCENTS.forEach(([c,n])=>{ const b=document.createElement('button'); b.type='button'; b.className='sw'; b.style.background=c;
+    b.setAttribute('aria-label', n); b.setAttribute('aria-pressed', String(S.accent===c));
+    b.addEventListener('click', ()=>{ S.accent=c; renderSwatches(); changed(); }); box.appendChild(b); });
+}
+
+/* ---------- empezar en blanco (confirmación en la página) ---------- */
+$('clearArea').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return; const area=$('clearArea');
+  if(b.id==='btnClear'){ area.innerHTML='<span>¿Borrar todo?</span><button class="btn small" type="button" data-c="yes">Sí, borrar</button><button class="btn small ghost" type="button" data-c="no">Cancelar</button>'; return; }
+  if(b.dataset.c==='yes'){ S = clone(BLANK); syncSimple(); renderAllLists(); renderSwatches(); photoThumb(); changed(); $('exampleNote').querySelector('span').textContent='Formulario en blanco. Tus datos se guardan solos en este navegador.'; }
+  area.innerHTML='<button class="btn small" type="button" id="btnClear">Empezar en blanco</button>';
+});
+
+/* ---------- la hoja ---------- */
+const IC = {
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  email:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+  city:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  web:'<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>'
+};
+const svg = (p)=>'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">'+p+'</svg>';
+const has = (o)=>Object.values(o).some(v=>typeof v==='string' ? v.trim() : false);
+
+function nameHTML(n){
+  const w = (n||'').trim().split(/\s+/).filter(Boolean);
+  if(!w.length) return '<span class="cv-empty">Tu nombre</span>';
+  if(w.length<2) return esc(w[0]);
+  const h = Math.ceil(w.length/2); return esc(w.slice(0,h).join(' '))+'<br>'+esc(w.slice(h).join(' '));
+}
+function initials(n){ return (n||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('') || '·'; }
+
+function cvHTML(){
+  const contact = ['phone','email','city','web'].filter(k=>S[k] && S[k].trim())
+    .map(k=>'<div class="cv-contact">'+svg(IC[k])+'<span>'+esc(S[k])+'</span></div>').join('');
+  const skills = S.skills.filter(s=>s.name && s.name.trim()).map(s=>
+    '<div class="cv-skill"><div class="n">'+esc(s.name)+'</div><div class="cv-bar"><i style="width:'+Math.max(10,Math.min(100,Number(s.level)||0))+'%"></i></div></div>').join('');
+  const langs = S.languages.filter(l=>l.name && l.name.trim()).map(l=>
+    '<div class="cv-lang"><b>'+esc(l.name)+'</b>'+(l.level?' — '+esc(l.level):'')+'</div>').join('');
+  const quals = (S.qualities||'').split(',').map(x=>x.trim()).filter(Boolean).map(q=>'<span>'+esc(q)+'</span>').join('');
+
+  const jobs = S.experience.filter(has).map((j,i)=>{
+    const dates = [j.start,j.end].filter(x=>x&&x.trim()).map(esc).join(' — ');
+    const co = [j.company,j.place].filter(x=>x&&x.trim()).map(esc).join(' · ');
+    const bl = (j.bullets||'').split('\n').map(x=>x.trim()).filter(Boolean).map(x=>'<li>'+esc(x)+'</li>').join('');
+    return '<div class="cv-job"><div class="cv-dot'+(i?' o':'')+'"></div><div class="cv-jh"><b>'+(esc(j.role)||'Cargo')+'</b>'+
+      (dates?'<span class="cv-date">'+dates+'</span>':'')+'</div>'+(co?'<div class="cv-co">'+co+'</div>':'')+(bl?'<ul class="cv-ul">'+bl+'</ul>':'')+'</div>';
+  }).join('');
+  const edu = S.education.filter(has).map(e=>
+    '<div class="cv-edrow"><span class="cv-date">'+esc(e.years)+'</span><div><b>'+esc(e.degree)+'</b>'+(e.school?'<span class="s">'+esc(e.school)+'</span>':'')+'</div></div>').join('');
+  const courses = S.courses.filter(has).map(c=>
+    '<div class="cv-course"><span class="y">'+esc(c.year)+'</span><div><b>'+esc(c.name)+'</b>'+(c.org?'<span>'+esc(c.org)+'</span>':'')+'</div></div>').join('');
+
+  const side = '<aside class="cv-side">'+
+    '<div class="cv-photo">'+(S.photo?'<img src="'+S.photo+'" alt="">':'<div class="ph">'+esc(initials(S.name))+'</div>')+'</div>'+
+    (contact?'<section class="cv-sb"><h3 class="cv-h3">Contacto</h3>'+contact+'</section>':'')+
+    (skills?'<section class="cv-sb"><h3 class="cv-h3">Habilidades</h3>'+skills+'</section>':'')+
+    (langs?'<section class="cv-sb"><h3 class="cv-h3">Idiomas</h3>'+langs+'</section>':'')+
+    (quals?'<section class="cv-sb"><h3 class="cv-h3">Cualidades</h3><div class="cv-pills">'+quals+'</div></section>':'')+
+    '</aside>';
+  const main = '<main class="cv-main"><header><h2 class="cv-name">'+nameHTML(S.name)+'</h2>'+
+    (S.title?'<div class="cv-role"><i></i><span>'+esc(S.title)+'</span></div>':'')+'</header>'+
+    (S.profile&&S.profile.trim()?'<section class="cv-sec"><h3 class="cv-h2">Perfil</h3><p class="cv-p">'+esc(S.profile)+'</p></section>':'')+
+    (jobs?'<section class="cv-sec"><h3 class="cv-h2">Experiencia</h3><div class="cv-tl">'+jobs+'</div></section>':'')+
+    (edu?'<section class="cv-sec"><h3 class="cv-h2">Educación</h3><div class="cv-edu">'+edu+'</div></section>':'')+
+    (courses?'<section class="cv-sec"><h3 class="cv-h2">Cursos y certificaciones</h3><div class="cv-courses">'+courses+'</div></section>':'')+
+    '</main>';
+  return side+main;
+}
+
+const cv=$('cv'), holder=$('holder'), stage=$('stage');
+function renderCV(){
+  cv.style.setProperty('--acc', S.accent || '#C8A15A');
+  cv.innerHTML = cvHTML();
+  paginate();
+  fit();
+}
+/* Evita que un bloque quede partido entre dos páginas: lo pasa completo a la siguiente con margen superior */
+function paginate(){
+  const TOPM = 48, BOTM = 40;
+  const blocks = cv.querySelectorAll('.cv-h2,.cv-p,.cv-job,.cv-edrow,.cv-course,.cv-h3,.cv-contact,.cv-skill,.cv-lang,.cv-pills');
+  blocks.forEach(b=>{ b.style.marginTop=''; });
+  for(const b of blocks){
+    const base = cv.getBoundingClientRect(), sc = (base.width/816) || 1;
+    const r = b.getBoundingClientRect();
+    const top = (r.top-base.top)/sc, bot = (r.bottom-base.top)/sc, h = bot-top;
+    if(h <= 0 || h > PAGE_H-TOPM-BOTM) continue;
+    const page = Math.floor(top/PAGE_H), end = (page+1)*PAGE_H;
+    const isHead = b.classList.contains('cv-h2') || b.classList.contains('cv-h3');
+    let push = 0;
+    if(bot > end - BOTM - (isHead ? 60 : 0)) push = end + TOPM - top;
+    else if(page > 0 && top - page*PAGE_H < TOPM) push = page*PAGE_H + TOPM - top;
+    if(push > 0){
+      const cur = parseFloat(getComputedStyle(b).marginTop) || 0;
+      b.style.marginTop = (cur + push) + 'px';
+    }
+  }
+}
+function fit(){
+  const w = stage.clientWidth || 816, sc = Math.min(1, w/816), h = cv.offsetHeight;
+  holder.style.transform = 'scale('+sc+')';
+  stage.style.height = (h*sc)+'px';
+  holder.querySelectorAll('.pagebreak').forEach(x=>x.remove());
+  const pages = Math.max(1, Math.ceil((h-2)/PAGE_H));
+  for(let p=1;p<pages;p++){ const d=document.createElement('div'); d.className='pagebreak'; d.style.top=(p*PAGE_H)+'px'; holder.appendChild(d); }
+  const chip=$('pageChip');
+  chip.textContent = pages===1 ? '1 página' : pages+' páginas';
+  chip.className = 'chip'+(pages>1?' warn':'');
+  chip.title = pages>1 ? 'Recortá texto o quitá cursos para que quepa en una página' : '';
+}
+let rT; function changed(){ cancelAnimationFrame(rT); rT=requestAnimationFrame(renderCV); save(); }
+if('ResizeObserver' in window) new ResizeObserver(fit).observe(stage); else window.addEventListener('resize', fit);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ paginate(); fit(); });
+
+/* ---------- PDF ---------- */
+let downloads = null;
+if(window.claude && window.claude.use) window.claude.use('downloads').then(d=>{ downloads=d; }).catch(()=>{});
+const status = (t, err)=>{ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); };
+
+$('btnPdf').addEventListener('click', async ()=>{
+  const btn=$('btnPdf');
+    if(!window.html2canvas || !window.jspdf){ status('No se pudo cargar el generador de PDF. Recargá la página.', true); return; }
+  btn.disabled=true; status('Generando PDF…');
+  let tmp;
+  try{
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    tmp = document.createElement('div');
+    tmp.style.cssText='position:fixed; left:-10000px; top:0; width:816px; z-index:-1';
+    const copy = cv.cloneNode(true); copy.style.boxShadow='none'; tmp.appendChild(copy); document.body.appendChild(tmp);
+    const totalH = Math.max(PAGE_H, Math.ceil((copy.offsetHeight-2)/PAGE_H)*PAGE_H);
+    copy.style.minHeight = totalH+'px';
+    const canvas = await window.html2canvas(copy, {scale:2, backgroundColor:'#FFFFFF', useCORS:true, logging:false, width:816, height:totalH, windowWidth:816});
+    const pdf = new window.jspdf.jsPDF({unit:'pt', format:'letter', orientation:'portrait'});
+    const pagePx = PAGE_H*2, pages = Math.round(canvas.height/pagePx) || 1;
+    for(let p=0;p<pages;p++){
+      const pc=document.createElement('canvas'); pc.width=canvas.width; pc.height=pagePx;
+      const ctx=pc.getContext('2d'); ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,pc.width,pc.height);
+      ctx.drawImage(canvas, 0, p*pagePx, canvas.width, pagePx, 0, 0, canvas.width, pagePx);
+      if(p>0) pdf.addPage('letter','portrait');
+      pdf.addImage(pc.toDataURL('image/jpeg', .95), 'JPEG', 0, 0, 612, 792);
+    }
+    const blob = pdf.output('blob');
+    const base = (S.name||'').trim() ? 'CV '+S.name.trim() : 'Mi CV';
+    status('Confirmá la descarga…');
+    const fname = base.replace(/[\\/:*?"<>|]/g,'')+'.pdf';
+    if(downloads) await downloads.save({filename: fname, data: blob});
+    else pdf.save(fname);
+    status('PDF descargado.');
+  }catch(e){
+    const c = e && e.code;
+    if(c==='declined') status('Descarga cancelada.');
+    else if(c==='rate_limited') status('Ya hay una descarga pendiente. Esperá un momento.', true);
+    else status('No se pudo generar el PDF. Intentá de nuevo.', true);
+  }finally{ if(tmp) tmp.remove(); btn.disabled=false; }
+});
+
+/* ---------- inicio ---------- */
+if(load()) $('exampleNote').querySelector('span').textContent='Tus datos se guardan solos en este navegador.';
+renderAllLists(); renderSwatches(); photoThumb(); renderCV();
+})();
+</script>
+
+</body>
+</html>
