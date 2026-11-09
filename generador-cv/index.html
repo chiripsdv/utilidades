@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Llená tus datos y descargá un CV elegante en PDF tamaño carta.">
+<meta name="author" content="Ing. Francisco Chirips · Nexura">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231C2B33%22/%3E%3Crect x=%226%22 y=%226%22 width=%229%22 height=%2220%22 fill=%22%23C8A15A%22/%3E%3C/svg%3E">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -27,6 +28,7 @@
   --bg:#121A1E; --panel:#1A242A; --fg:#E6ECEE; --muted:#9AA9B0; --line:#2C3A41;
   --field:#141D22; --ink:#E6ECEE; --gold:#D3AE68; --danger:#E7765F; --focus:#7FB8D4; color-scheme:dark }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg); color:var(--fg); font-family:var(--ui); font-size:14px}
 .top{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between;
   padding-block:16px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
@@ -148,6 +150,20 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
 .cv-course b{font-size:12px; color:#1C2B33}
 .cv-course span{font-size:11px; color:#5A6870}
 .cv-empty{color:#9AA7AD; font-style:italic}
+.cv-refs{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px; row-gap:12px}
+.cv-ref{display:flex; flex-direction:column; gap:2px; padding-left:12px; border-left:2px solid var(--acc); min-width:0}
+.cv-ref b{font-size:12.5px; color:#1C2B33}
+.cv-ref .r{font-size:11.5px; color:#5A6870}
+.cv-ref .c{font-size:11px; color:#3B454C; overflow-wrap:anywhere}
+
+/* ===== Herramientas de datos y pie ===== */
+.tools{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.unlock{display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px}
+.unlock label{font-size:12.5px; font-weight:600; color:var(--fg)}
+.unlock input{font:inherit; font-size:15px; letter-spacing:.2em; font-variant-numeric:tabular-nums; width:150px; min-height:40px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--field); color:var(--fg)}
+.unlock .msg{font-size:12px; color:var(--danger); flex-basis:100%}
+.foot{text-align:center; font-size:12px; color:var(--muted); padding-block:8px 28px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.foot b{font-weight:600; color:var(--fg)}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
@@ -171,6 +187,20 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
     <div class="note" id="exampleNote">
       <span>Estos son datos de ejemplo. Reemplazalos con los tuyos; se guardan solos en este navegador.</span>
       <span class="confirm" id="clearArea"><button class="btn small" type="button" id="btnClear">Empezar en blanco</button></span>
+    </div>
+
+    <div class="tools">
+      <button class="btn small" type="button" id="btnUnlock" hidden>Cargar datos guardados</button>
+      <button class="btn small" type="button" id="btnExport">Guardar respaldo</button>
+      <label class="btn small" for="importInput" style="cursor:pointer">Abrir respaldo</label>
+      <input type="file" id="importInput" accept=".json,application/json" hidden>
+    </div>
+    <div class="unlock" id="unlockBox" hidden>
+      <label for="unlockCode">Código de acceso</label>
+      <input type="password" id="unlockCode" inputmode="numeric" autocomplete="off" maxlength="12">
+      <button class="btn small primary" type="button" id="btnUnlockGo">Cargar</button>
+      <button class="btn small ghost" type="button" id="btnUnlockCancel">Cancelar</button>
+      <span class="msg" id="unlockMsg" role="alert"></span>
     </div>
 
     <details class="sec" open>
@@ -235,6 +265,12 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
     </details>
 
     <details class="sec">
+      <summary>Referencias</summary>
+      <div class="sec-body"><div id="list-references" class="sec-body" style="padding:0"></div>
+        <button class="btn small" type="button" data-add="references">+ Agregar referencia</button></div>
+    </details>
+
+    <details class="sec">
       <summary>Cualidades y estilo</summary>
       <div class="sec-body">
         <div class="f"><label for="qualities">Cualidades</label>
@@ -251,6 +287,8 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
     <div class="stage" id="stage"><div class="sheet-holder" id="holder"><div class="cv" id="cv"></div></div></div>
   </section>
 </div>
+
+<footer class="foot">Hecho por <b>Ing. Francisco Chirips</b> · Nexura 2026</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -280,11 +318,17 @@ const SAMPLE = {
   ],
   skills:[{name:'Excel y Power BI', level:90},{name:'Contabilidad', level:80},{name:'Gestión de proyectos', level:75},{name:'Análisis financiero', level:85}],
   languages:[{name:'Español', level:'Nativo'},{name:'Inglés', level:'Intermedio (B1)'}],
-  qualities:'Liderazgo, Organización, Comunicación, Trabajo en equipo'
+  qualities:'Liderazgo, Organización, Comunicación, Trabajo en equipo',
+  references:[
+    {name:'Carlos Méndez Ruiz', role:'Gerente Financiero', company:'Empresa Ejemplo S.A.', phone:'+505 8800 0000', email:'carlos.mendez@email.com'},
+    {name:'María José Torres', role:'Contadora General', company:'Compañía Demo', phone:'+505 8700 0000', email:'mj.torres@email.com'}
+  ]
 };
 const BLANK = {name:'', title:'', phone:'', email:'', city:'', web:'', photo:'', accent:'#C8A15A', profile:'',
   experience:[{role:'', company:'', place:'', start:'', end:'', bullets:''}], education:[{degree:'', school:'', years:''}],
-  courses:[], skills:[], languages:[{name:'Español', level:'Nativo'}], qualities:''};
+  courses:[], skills:[], languages:[{name:'Español', level:'Nativo'}], qualities:'', references:[]};
+/* Datos protegidos con código (cifrados). Vacío = el botón no aparece. */
+const ENC = null;
 
 const LISTS = {
   experience:{label:'Empleo', blank:{role:'', company:'', place:'', start:'', end:'', bullets:''}, fields:[
@@ -298,11 +342,19 @@ const LISTS = {
   skills:{label:'Habilidad', blank:{name:'', level:75}, fields:[
     {k:'name', label:'Habilidad', full:true}, {k:'level', label:'Nivel', type:'range', full:true}]},
   languages:{label:'Idioma', blank:{name:'', level:''}, fields:[
-    {k:'name', label:'Idioma'}, {k:'level', label:'Nivel', ph:'Avanzado (B2)'}]}
+    {k:'name', label:'Idioma'}, {k:'level', label:'Nivel', ph:'Avanzado (B2)'}]},
+  references:{label:'Referencia', blank:{name:'', role:'', company:'', phone:'', email:''}, fields:[
+    {k:'name', label:'Nombres y apellidos', full:true}, {k:'role', label:'Profesión'}, {k:'company', label:'Empresa'},
+    {k:'phone', label:'Teléfono'}, {k:'email', label:'Correo'}]}
 };
 
-let S = load() || clone(SAMPLE);
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function normalize(o){
+  const d = Object.assign(clone(BLANK), o && typeof o==='object' ? o : {});
+  Object.keys(LISTS).forEach(k=>{ if(!Array.isArray(d[k])) d[k]=[]; });
+  return d;
+}
+let S = normalize(load() || clone(SAMPLE));
 function load(){ try{ const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; }catch(e){ return null; } }
 let saveT;
 function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){
@@ -393,9 +445,46 @@ function renderSwatches(){
 $('clearArea').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return; const area=$('clearArea');
   if(b.id==='btnClear'){ area.innerHTML='<span>¿Borrar todo?</span><button class="btn small" type="button" data-c="yes">Sí, borrar</button><button class="btn small ghost" type="button" data-c="no">Cancelar</button>'; return; }
-  if(b.dataset.c==='yes'){ S = clone(BLANK); syncSimple(); renderAllLists(); renderSwatches(); photoThumb(); changed(); $('exampleNote').querySelector('span').textContent='Formulario en blanco. Tus datos se guardan solos en este navegador.'; }
+  if(b.dataset.c==='yes'){ setData(clone(BLANK)); $('exampleNote').querySelector('span').textContent='Formulario en blanco. Tus datos se guardan solos en este navegador.'; }
   area.innerHTML='<button class="btn small" type="button" id="btnClear">Empezar en blanco</button>';
 });
+function setData(o){ S = normalize(o); syncSimple(); renderAllLists(); renderSwatches(); photoThumb(); changed(); }
+
+/* ---------- respaldo: guardar y abrir ---------- */
+$('btnExport').addEventListener('click', async ()=>{
+  const base = (S.name||'').trim() ? 'Respaldo CV '+S.name.trim() : 'Respaldo CV';
+  try{ await saveFile(base.replace(/[\\/:*?"<>|]/g,'')+'.json', new Blob([JSON.stringify(S, null, 2)], {type:'application/json'})); status('Respaldo guardado.'); }
+  catch(e){ status(e && e.code==='declined' ? 'Descarga cancelada.' : 'No se pudo guardar el respaldo.', !(e && e.code==='declined')); }
+});
+$('importInput').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0]; e.target.value=''; if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{ const o = JSON.parse(r.result); if(!o || typeof o!=='object' || !('name' in o)) throw 0; setData(o); status('Respaldo cargado.'); }
+    catch(err){ status('Ese archivo no es un respaldo de este generador.', true); } };
+  r.readAsText(file);
+});
+
+/* ---------- datos protegidos con código ---------- */
+if(ENC && window.crypto && crypto.subtle) $('btnUnlock').hidden = false;
+const b64 = (s)=>Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+async function decryptENC(code){
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(ENC.salt), iterations:ENC.iter, hash:'SHA-256'}, km, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(ENC.iv)}, key, b64(ENC.data));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function closeUnlock(){ $('unlockBox').hidden = true; $('unlockCode').value=''; $('unlockMsg').textContent=''; $('btnUnlock').hidden = !ENC; }
+$('btnUnlock').addEventListener('click', ()=>{ $('unlockBox').hidden=false; $('btnUnlock').hidden=true; $('unlockCode').focus(); });
+$('btnUnlockCancel').addEventListener('click', closeUnlock);
+async function tryUnlock(){
+  const code = $('unlockCode').value.trim(); if(!code) return;
+  $('btnUnlockGo').disabled = true; $('unlockMsg').textContent='';
+  try{ setData(await decryptENC(code)); closeUnlock(); status('Datos cargados.'); $('exampleNote').querySelector('span').textContent='Tus datos se guardan solos en este navegador.'; }
+  catch(e){ $('unlockMsg').textContent='Código incorrecto.'; $('unlockCode').select(); }
+  finally{ $('btnUnlockGo').disabled = false; }
+}
+$('btnUnlockGo').addEventListener('click', tryUnlock);
+$('unlockCode').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); tryUnlock(); } if(e.key==='Escape') closeUnlock(); });
 
 /* ---------- la hoja ---------- */
 const IC = {
@@ -435,6 +524,11 @@ function cvHTML(){
     '<div class="cv-edrow"><span class="cv-date">'+esc(e.years)+'</span><div><b>'+esc(e.degree)+'</b>'+(e.school?'<span class="s">'+esc(e.school)+'</span>':'')+'</div></div>').join('');
   const courses = S.courses.filter(has).map(c=>
     '<div class="cv-course"><span class="y">'+esc(c.year)+'</span><div><b>'+esc(c.name)+'</b>'+(c.org?'<span>'+esc(c.org)+'</span>':'')+'</div></div>').join('');
+  const refs = S.references.filter(has).map(r=>{
+    const sub = [r.role, r.company].filter(x=>x&&x.trim()).map(esc).join(' · ');
+    const con = [r.phone, r.email].filter(x=>x&&x.trim()).map(esc).join(' · ');
+    return '<div class="cv-ref"><b>'+esc(r.name)+'</b>'+(sub?'<span class="r">'+sub+'</span>':'')+(con?'<span class="c">'+con+'</span>':'')+'</div>';
+  }).join('');
 
   const side = '<aside class="cv-side">'+
     '<div class="cv-photo">'+(S.photo?'<img src="'+S.photo+'" alt="">':'<div class="ph">'+esc(initials(S.name))+'</div>')+'</div>'+
@@ -449,6 +543,7 @@ function cvHTML(){
     (jobs?'<section class="cv-sec"><h3 class="cv-h2">Experiencia</h3><div class="cv-tl">'+jobs+'</div></section>':'')+
     (edu?'<section class="cv-sec"><h3 class="cv-h2">Educación</h3><div class="cv-edu">'+edu+'</div></section>':'')+
     (courses?'<section class="cv-sec"><h3 class="cv-h2">Cursos y certificaciones</h3><div class="cv-courses">'+courses+'</div></section>':'')+
+    (refs?'<section class="cv-sec"><h3 class="cv-h2">Referencias</h3><div class="cv-refs">'+refs+'</div></section>':'')+
     '</main>';
   return side+main;
 }
@@ -463,7 +558,7 @@ function renderCV(){
 /* Evita que un bloque quede partido entre dos páginas: lo pasa completo a la siguiente con margen superior */
 function paginate(){
   const TOPM = 48, BOTM = 40;
-  const blocks = cv.querySelectorAll('.cv-h2,.cv-p,.cv-job,.cv-edrow,.cv-course,.cv-h3,.cv-contact,.cv-skill,.cv-lang,.cv-pills');
+  const blocks = cv.querySelectorAll('.cv-h2,.cv-p,.cv-job,.cv-edrow,.cv-course,.cv-ref,.cv-h3,.cv-contact,.cv-skill,.cv-lang,.cv-pills');
   blocks.forEach(b=>{ b.style.marginTop=''; });
   for(const b of blocks){
     const base = cv.getBoundingClientRect(), sc = (base.width/816) || 1;
@@ -500,11 +595,18 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ pagin
 /* ---------- PDF ---------- */
 let downloads = null;
 if(window.claude && window.claude.use) window.claude.use('downloads').then(d=>{ downloads=d; }).catch(()=>{});
-const status = (t, err)=>{ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); };
+function status(t, err){ const s=$('status'); s.textContent=t||''; s.className='status'+(err?' err':''); }
+/* En claude.ai usa la descarga del visor; fuera de Claude (GitHub Pages) usa la descarga normal del navegador */
+async function saveFile(filename, blob){
+  if(downloads) return downloads.save({filename, data: blob});
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
 
 $('btnPdf').addEventListener('click', async ()=>{
   const btn=$('btnPdf');
-    if(!window.html2canvas || !window.jspdf){ status('No se pudo cargar el generador de PDF. Recargá la página.', true); return; }
+  if(!window.html2canvas || !window.jspdf){ status('No se pudo cargar el generador de PDF. Recargá la página.', true); return; }
   btn.disabled=true; status('Generando PDF…');
   let tmp;
   try{
@@ -526,10 +628,8 @@ $('btnPdf').addEventListener('click', async ()=>{
     }
     const blob = pdf.output('blob');
     const base = (S.name||'').trim() ? 'CV '+S.name.trim() : 'Mi CV';
-    status('Confirmá la descarga…');
-    const fname = base.replace(/[\\/:*?"<>|]/g,'')+'.pdf';
-    if(downloads) await downloads.save({filename: fname, data: blob});
-    else pdf.save(fname);
+    if(downloads) status('Confirmá la descarga…');
+    await saveFile(base.replace(/[\\/:*?"<>|]/g,'')+'.pdf', blob);
     status('PDF descargado.');
   }catch(e){
     const c = e && e.code;
