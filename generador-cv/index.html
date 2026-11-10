@@ -178,6 +178,10 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
   </div>
   <div class="actions">
     <span class="status" id="status" role="status" aria-live="polite"></span>
+    <button class="btn" id="btnWord" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m8 13 1.5 5L12 14l2.5 4L16 13"/></svg>
+      Descargar Word
+    </button>
     <button class="btn primary" id="btnPdf" type="button">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       Descargar PDF
@@ -291,6 +295,7 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script>
 (function(){
 const KEY = 'cv-generador-v1';
@@ -588,6 +593,139 @@ async function saveFile(filename, blob){
   a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 4000);
 }
+
+/* ---------- Word (.docx editable) ---------- */
+function canvasBytes(c){ return new Promise((res, rej)=>c.toBlob(b=>b ? b.arrayBuffer().then(x=>res(new Uint8Array(x)), rej) : rej(new Error('img')), 'image/png')); }
+function loadImg(src){ return new Promise((res, rej)=>{ const i = new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function photoPNG(acc){
+  const s = 444, c = document.createElement('canvas'); c.width = c.height = s; const x = c.getContext('2d'), r = s/2;
+  x.fillStyle = acc; x.beginPath(); x.arc(r, r, r, 0, Math.PI*2); x.fill();
+  x.fillStyle = '#1C2B33'; x.beginPath(); x.arc(r, r, r-9, 0, Math.PI*2); x.fill();
+  x.save(); x.beginPath(); x.arc(r, r, r-24, 0, Math.PI*2); x.clip();
+  if(S.photo){ const im = await loadImg(S.photo); const m = Math.min(im.width, im.height); x.drawImage(im, (im.width-m)/2, (im.height-m)/2, m, m, 24, 24, s-48, s-48); }
+  else { x.fillStyle = '#2C3E48'; x.fillRect(0, 0, s, s); x.fillStyle = '#E8EEF0'; x.font = '600 130px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(initials(S.name), r, r+6); }
+  x.restore(); return canvasBytes(c);
+}
+async function barPNG(pct, acc){
+  const w = 624, h = 9, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  x.fillStyle = '#33474F'; x.fillRect(0, 0, w, h);
+  x.fillStyle = acc; x.fillRect(0, 0, Math.round(w*Math.max(10, Math.min(100, Number(pct)||0))/100), h);
+  return canvasBytes(c);
+}
+async function buildDocx(){
+  const D = window.docx;
+  const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, ImageRun,
+    AlignmentType, HeightRule, LevelFormat, TableLayoutType, TabStopType, VerticalAlign} = D;
+  const ACC = (S.accent || '#C8A15A'), A = ACC.replace('#','').toUpperCase();
+  const HEAD = 'Georgia', BODY = 'Calibri';
+  const SIDE_W = 4080, MAIN_W = 8160, MAIN_IN = 8160-660-720;
+  const none = {style: BorderStyle.NONE, size: 0, color: 'FFFFFF'};
+  const cellB = {top: none, bottom: none, left: none, right: none};
+  const tblB = {top: none, bottom: none, left: none, right: none, insideHorizontal: none, insideVertical: none};
+  const t = (text, o)=>new TextRun(Object.assign({text: String(text ?? ''), font: BODY}, o || {}));
+  const clean = (v)=>String(v ?? '').trim();
+
+  /* --- barra lateral --- */
+  const side = [];
+  side.push(new Paragraph({alignment: AlignmentType.CENTER, spacing: {after: 200},
+    children: [new ImageRun({data: await photoPNG(ACC), transformation: {width: 148, height: 148}})]}));
+  const sideHead = (txt)=>new Paragraph({spacing: {before: 360, after: 140}, keepNext: true,
+    children: [t(txt.toUpperCase(), {bold: true, size: 16, color: A, characterSpacing: 40})]});
+  const contacts = ['phone','email','city','web'].map(k=>clean(S[k])).filter(Boolean);
+  if(contacts.length){ side.push(sideHead('Contacto'));
+    contacts.forEach(v=>side.push(new Paragraph({spacing: {after: 100}, children: [t('■  ', {size: 12, color: A}), t(v, {size: 18, color: 'D5DDE1'})]}))); }
+  const skills = S.skills.filter(s=>clean(s.name));
+  if(skills.length){ side.push(sideHead('Habilidades'));
+    for(const s of skills){
+      side.push(new Paragraph({spacing: {after: 50}, keepNext: true, children: [t(s.name, {size: 18, color: 'EEF2F4'})]}));
+      side.push(new Paragraph({spacing: {after: 150}, children: [new ImageRun({data: await barPNG(s.level, ACC), transformation: {width: 208, height: 3}})]}));
+    } }
+  const langs = S.languages.filter(l=>clean(l.name));
+  if(langs.length){ side.push(sideHead('Idiomas'));
+    langs.forEach(l=>side.push(new Paragraph({spacing: {after: 80}, children: [t(l.name, {bold: true, size: 18, color: 'EEF2F4'}), t(clean(l.level) ? ' — '+l.level : '', {size: 18, color: 'D5DDE1'})]}))); }
+  const quals = (S.qualities||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(quals.length){ side.push(sideHead('Cualidades'));
+    side.push(new Paragraph({spacing: {line: 300}, children: [t(quals.join('  ·  '), {size: 18, color: 'D5DDE1'})]})); }
+
+  /* --- columna principal --- */
+  const main = [];
+  const w = clean(S.name).split(/\s+/).filter(Boolean), half = Math.ceil(w.length/2);
+  const nameRuns = w.length < 2 ? [t(w[0] || 'Tu nombre', {font: HEAD, size: 64, bold: true, color: '1C2B33'})]
+    : [t(w.slice(0, half).join(' '), {font: HEAD, size: 64, bold: true, color: '1C2B33'}), t(w.slice(half).join(' '), {font: HEAD, size: 64, bold: true, color: '1C2B33', break: 1})];
+  main.push(new Paragraph({spacing: {after: 120, line: 740, lineRule: 'exact'}, children: nameRuns}));
+  if(clean(S.title)) main.push(new Paragraph({spacing: {after: 120}, children: [t('━━━  ', {size: 18, color: A}), t(S.title.toUpperCase(), {size: 18, bold: true, color: '5A6870', characterSpacing: 50})]}));
+  const mainHead = (txt)=>new Paragraph({spacing: {before: 300, after: 120}, keepNext: true, children: [t(txt, {font: HEAD, size: 33, bold: true, color: '1C2B33'})]});
+  const rule = {bottom: {style: BorderStyle.SINGLE, size: 4, color: 'E6EAEC', space: 4}};
+  if(clean(S.profile)){ main.push(mainHead('Perfil'));
+    S.profile.split('\n').map(x=>x.trim()).filter(Boolean).forEach(p=>main.push(new Paragraph({spacing: {after: 80, line: 312}, children: [t(p, {size: 19, color: '3B454C'})]}))); }
+  const jobs = S.experience.filter(has);
+  if(jobs.length){ main.push(mainHead('Experiencia'));
+    jobs.forEach((j, i)=>{
+      const dates = [j.start, j.end].map(clean).filter(Boolean).join(' — ');
+      const co = [j.company, j.place].map(clean).filter(Boolean).join(' · ');
+      main.push(new Paragraph({spacing: {before: i ? 220 : 40, after: 30}, keepNext: true, keepLines: true,
+        tabStops: [{type: TabStopType.RIGHT, position: MAIN_IN}],
+        children: [t('●  ', {size: 14, color: A}), t(clean(j.role) || 'Cargo', {bold: true, size: 21, color: '1C2B33'}), t(dates ? '\t'+dates : '', {bold: true, size: 17, color: '6B5427'})]}));
+      if(co) main.push(new Paragraph({spacing: {after: 60}, keepNext: true, indent: {left: 300}, children: [t(co, {size: 18, color: '5A6870'})]}));
+      (j.bullets||'').split('\n').map(x=>x.trim()).filter(Boolean).forEach(b=>main.push(new Paragraph({numbering: {reference: 'cvbul', level: 0}, spacing: {after: 30, line: 288}, children: [t(b, {size: 18, color: '3B454C'})]})));
+    }); }
+  const edu = S.education.filter(has);
+  if(edu.length){ main.push(mainHead('Educación'));
+    edu.forEach(e=>main.push(new Paragraph({spacing: {after: 120}, border: rule, keepLines: true, tabStops: [{type: TabStopType.LEFT, position: 1500}],
+      children: [t(clean(e.years), {bold: true, size: 17, color: '6B5427'}), t('\t'+clean(e.degree), {bold: true, size: 20, color: '1C2B33'}), t(clean(e.school) ? '   '+e.school : '', {size: 18, color: '5A6870'})]}))); }
+  const courses = S.courses.filter(has);
+  if(courses.length){ main.push(mainHead('Cursos y certificaciones'));
+    courses.forEach(c=>main.push(new Paragraph({spacing: {after: 100}, border: rule, keepLines: true, tabStops: [{type: TabStopType.LEFT, position: 800}],
+      children: [t(clean(c.year), {bold: true, size: 16, color: '6B5427'}), t('\t'+clean(c.name), {bold: true, size: 18, color: '1C2B33'}), t(clean(c.org) ? '   '+c.org : '', {size: 17, color: '5A6870'})]}))); }
+  const refs = S.references.filter(has);
+  if(refs.length){ main.push(mainHead('Referencias'));
+    const refCell = (r)=>new TableCell({width: {size: MAIN_IN/2, type: WidthType.DXA}, borders: cellB, margins: {top: 60, bottom: 140, left: 0, right: 200},
+      children: r ? [
+        new Paragraph({border: {left: {style: BorderStyle.SINGLE, size: 12, color: A, space: 8}}, indent: {left: 160}, children: [t(clean(r.name), {bold: true, size: 19, color: '1C2B33'})]}),
+        new Paragraph({border: {left: {style: BorderStyle.SINGLE, size: 12, color: A, space: 8}}, indent: {left: 160}, children: [t([r.role, r.company].map(clean).filter(Boolean).join(' · '), {size: 17, color: '5A6870'})]}),
+        new Paragraph({border: {left: {style: BorderStyle.SINGLE, size: 12, color: A, space: 8}}, indent: {left: 160}, children: [t([r.phone, r.email].map(clean).filter(Boolean).join(' · '), {size: 16, color: '3B454C'})]})
+      ] : [new Paragraph({children: []})]});
+    const rows = [];
+    for(let i = 0; i < refs.length; i += 2) rows.push(new TableRow({cantSplit: true, children: [refCell(refs[i]), refCell(refs[i+1])]}));
+    main.push(new Table({width: {size: MAIN_IN, type: WidthType.DXA}, columnWidths: [MAIN_IN/2, MAIN_IN/2], layout: TableLayoutType.FIXED, borders: tblB, rows}));
+    main.push(new Paragraph({children: []}));
+  }
+
+  const layout = new Table({width: {size: 12240, type: WidthType.DXA}, columnWidths: [SIDE_W, MAIN_W], layout: TableLayoutType.FIXED, borders: tblB,
+    rows: [new TableRow({height: {value: 15600, rule: HeightRule.ATLEAST}, children: [
+      new TableCell({width: {size: SIDE_W, type: WidthType.DXA}, borders: cellB, verticalAlign: VerticalAlign.TOP,
+        shading: {type: ShadingType.CLEAR, color: 'auto', fill: '1C2B33'}, margins: {top: 720, bottom: 480, left: 480, right: 480}, children: side}),
+      new TableCell({width: {size: MAIN_W, type: WidthType.DXA}, borders: cellB, verticalAlign: VerticalAlign.TOP,
+        margins: {top: 720, bottom: 480, left: 660, right: 720}, children: main})
+    ]})]});
+
+  const doc = new Document({
+    creator: 'Generador de CV · Nexura', title: clean(S.name) ? 'CV '+clean(S.name) : 'CV',
+    styles: {default: {document: {run: {font: BODY, size: 19, color: '3B454C'}, paragraph: {spacing: {after: 0}}}}},
+    numbering: {config: [{reference: 'cvbul', levels: [{level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT,
+      style: {paragraph: {indent: {left: 560, hanging: 220}}, run: {color: A}}}]}]},
+    sections: [{properties: {page: {size: {width: 12240, height: 15840}, margin: {top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0}}},
+      children: [layout, new Paragraph({spacing: {before: 0, after: 0, line: 20, lineRule: 'exact'}, children: [t('', {size: 2})]})]}]
+  });
+  return Packer.toBlob(doc);
+}
+$('btnWord').addEventListener('click', async ()=>{
+  const btn = $('btnWord');
+  if(!window.docx){ status('No se pudo cargar el generador de Word. Recargá la página.', true); return; }
+  btn.disabled = true; status('Generando Word…');
+  try{
+    const blob = await buildDocx();
+    const base = (S.name||'').trim() ? 'CV '+S.name.trim() : 'Mi CV';
+    if(downloads) status('Confirmá la descarga…');
+    await saveFile(base.replace(/[\\/:*?"<>|]/g,'')+'.docx', blob);
+    status('Word descargado.');
+  }catch(e){
+    const c = e && e.code;
+    if(c==='declined') status('Descarga cancelada.');
+    else if(c==='rate_limited') status('Ya hay una descarga pendiente. Esperá un momento.', true);
+    else status('No se pudo generar el Word. Intentá de nuevo.', true);
+  }finally{ btn.disabled = false; }
+});
 
 $('btnPdf').addEventListener('click', async ()=>{
   const btn=$('btnPdf');
